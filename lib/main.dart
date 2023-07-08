@@ -1,4 +1,6 @@
+import 'package:arkit_plugin/arkit_plugin.dart';
 import 'package:flutter/material.dart';
+import 'package:vector_math/vector_math_64.dart';
 
 void main() {
   runApp(const MyApp());
@@ -36,6 +38,14 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late ARKitController arKitController;
+
+  @override
+  void dispose() {
+    arKitController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -50,10 +60,16 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: const Center(
-          // Center is a layout widget. It takes a single child and positions it
-          // in the middle of the parent.
-          ),
+      body: ARKitSceneView(
+        onARKitViewCreated: onARKitViewCreated,
+      ),
     );
+  }
+
+  void onARKitViewCreated(ARKitController arKitController) {
+    this.arKitController = arKitController;
+    final node = ARKitNode(
+        geometry: ARKitSphere(radius: 0.1), position: Vector3(0, 0, -0.5));
+    this.arKitController.add(node);
   }
 }
