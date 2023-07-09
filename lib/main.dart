@@ -29,6 +29,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late ARKitController arKitController;
+  ARKitNode? hand;
 
   @override
   void dispose() {
@@ -43,6 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: ARKitSceneView(
+        configuration: ARKitConfiguration.bodyTracking,
         onARKitViewCreated: onARKitViewCreated,
       ),
     );
@@ -50,8 +52,39 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void onARKitViewCreated(ARKitController arKitController) {
     this.arKitController = arKitController;
-    final node = ARKitNode(
-        geometry: ARKitSphere(radius: 0.1), position: Vector3(0, 0, -0.5));
-    this.arKitController.add(node);
+    this.arKitController.onAddNodeForAnchor = _handleAddAnchor;
+    this.arKitController.onUpdateNodeForAnchor = _handleUpdateAnchor;
+  }
+
+  void _handleAddAnchor(ARKitAnchor anchor) {
+    if (anchor is! ARKitBodyAnchor) {
+      return;
+    }
+    final transform =
+        anchor.skeleton.modelTransformsFor(ARKitSkeletonJointName.head);
+    hand = _createSphere(transform!);
+    arKitController.add(hand!, parentNodeName: anchor.nodeName);
+  }
+
+  ARKitNode _createSphere(Matrix4 transform) {
+    final position = Vector3(
+      transform.getColumn(3).x,
+      transform.getColumn(3).y,
+      transform.getColumn(3).z,
+    );
+    return ARKitNode(geometry: ARKitSphere(radius: 0.1), position: position);
+  }
+
+  void _handleUpdateAnchor(ARKitAnchor anchor) {
+    if (anchor is ARKitBodyAnchor && mounted) {
+      final transform =
+          anchor.skeleton.modelTransformsFor(ARKitSkeletonJointName.head)!;
+      final position = Vector3(
+        transform.getColumn(3).x,
+        transform.getColumn(3).y,
+        transform.getColumn(3).z,
+      );
+      hand?.position = position;
+    }
   }
 }
