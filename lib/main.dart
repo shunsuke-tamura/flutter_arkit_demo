@@ -29,7 +29,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late ARKitController arKitController;
-  ARKitNode? hand;
+  ARKitNode? face;
+  ARKitNode? sphere;
 
   @override
   void dispose() {
@@ -44,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: ARKitSceneView(
-        configuration: ARKitConfiguration.bodyTracking,
+        configuration: ARKitConfiguration.faceTracking,
         onARKitViewCreated: onARKitViewCreated,
       ),
     );
@@ -57,13 +58,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _handleAddAnchor(ARKitAnchor anchor) {
-    if (anchor is! ARKitBodyAnchor) {
+    if (anchor is! ARKitFaceAnchor) {
       return;
     }
-    final transform =
-        anchor.skeleton.modelTransformsFor(ARKitSkeletonJointName.head);
-    hand = _createSphere(transform!);
-    arKitController.add(hand!, parentNodeName: anchor.nodeName);
+    face = ARKitNode(geometry: anchor.geometry);
+    arKitController.add(face!, parentNodeName: anchor.nodeName);
+    sphere = _createSphere(anchor.transform);
+    arKitController.add(sphere!, parentNodeName: anchor.nodeName);
   }
 
   ARKitNode _createSphere(Matrix4 transform) {
@@ -76,15 +77,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _handleUpdateAnchor(ARKitAnchor anchor) {
-    if (anchor is ARKitBodyAnchor && mounted) {
-      final transform =
-          anchor.skeleton.modelTransformsFor(ARKitSkeletonJointName.head)!;
-      final position = Vector3(
-        transform.getColumn(3).x,
-        transform.getColumn(3).y,
-        transform.getColumn(3).z,
-      );
-      hand?.position = position;
+    if (anchor is ARKitFaceAnchor && mounted) {
+      arKitController.updateFaceGeometry(face!, anchor.identifier);
+      if (face != null) {
+        final transform = face!.transform;
+        final position = Vector3(
+          transform.getColumn(3).x,
+          transform.getColumn(3).y + 0.2,
+          transform.getColumn(3).z,
+        );
+        sphere!.position = position;
+      }
     }
   }
 }
